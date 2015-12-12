@@ -27,7 +27,7 @@
 
 /* Makro for testing not equal zero */
 #define test(var)							       \
-	if ((var) != 0) {							       \
+	if ((var) != 0) {						       \
 		debug_s("Not equal 0", #var);				       \
 		debug_s("errno", strerror(errno));			       \
 		return var;						       \

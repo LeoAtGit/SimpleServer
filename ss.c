@@ -5,7 +5,6 @@ int main (int argc, char *argv[])
 {
 	int sfd;
 	int cfd;
-	size_t bytes_read;
 	char buffer[1000];
 
 	struct in_addr inet_addr;
@@ -14,7 +13,7 @@ int main (int argc, char *argv[])
 	uint32_t ip_addr_local;
 	uint16_t port_local;
 
-	char test[] = "<!doctype html><html><h1>Test lol</h1></html>";
+	char test[] = "HTTP/1.1 200 OK\n\n<!doctype html><html><h1>Test lol</h1></html>";
 
 	ip_addr_local = 3232236134; /* 192.168.2.102 */
 	port_local = 12345;
@@ -37,9 +36,8 @@ int main (int argc, char *argv[])
 
 	cfd = accept(sfd, NULL, 0);
 	//for(;;) {
-		bytes_read = read(cfd, buffer, 100);
+		read(cfd, buffer, 1000);
 		write(cfd, test, strlen(test));
-		write(cfd, '\0', 1);
 
 		//printf("%s", buffer);
 		debug_s("", buffer);
