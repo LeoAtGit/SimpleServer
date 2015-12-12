@@ -13,3 +13,5 @@
 #include <errno.h>  /* errno() */
 #include <fcntl.h>  /* open() */
 
+#define REQUEST_SIZE sizeof(char) * 25
+
