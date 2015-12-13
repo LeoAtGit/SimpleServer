@@ -15,3 +15,13 @@
 
 #define REQUEST_SIZE sizeof(char) * 25
 
+struct request_struct {
+	char *method;
+	char *request_uri;
+	char *http_version;
+	char *request_header;
+};
+
+int process_request(char *request_string, struct request_struct *request);
+char **split_words(char *text);
+

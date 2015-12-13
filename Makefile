@@ -2,7 +2,7 @@
 debug = -DDEBUG -ggdb
 
 all:
-	gcc -std=c99 -Wall $(debug) ss.c -o ss
+	gcc -std=c99 -Wall -pedantic $(debug) ss.c -o ss
 
 clean:
 	rm ss
