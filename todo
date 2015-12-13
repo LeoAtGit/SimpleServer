@@ -1,0 +1,2 @@
+- check for memory leaks when error handling
+

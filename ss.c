@@ -19,6 +19,8 @@ int main (int argc, char *argv[])
 	int i;
 	char test[] = "HTTP/1.1 200 OK\n\n<!doctype html><html><h1>Test lol</h1><img src=\"test.jpg\" /></html>";
 
+	request_string = NULL;
+
 	ip_addr_local = 3232236134; /* 192.168.2.102 */
 	port_local = 12345;
 
@@ -51,50 +53,92 @@ int main (int argc, char *argv[])
 			request_size += REQUEST_SIZE;
 			request_string = realloc(request_string, REQUEST_SIZE + request_size);
 			test_mem(request_string);
+			memset(request_string + request_size, '\0', REQUEST_SIZE);
 		}
-
-		//debug_s("", request_string);
 
 		test(process_request(request_string, request));
 		//TODO make_response();
 		write(cfd, test, strlen(test));
 
+		debug_s("Method", request->method);
+
 		close(cfd);
-		//TODO free all of the stuff from request
-		memset(request, '\0', sizeof(struct request_struct));
+
+		free(request->method);
+		free(request->request_uri);
+		free(request->http_version);
+		free(request->request_header);
+
 		memset(request_string, '\0', REQUEST_SIZE + request_size);
 		free(request_string);
 	}
 
-	free(request);
 	close(sfd);
+	free(request);
 
 	return 0;
+
+error:
+	close(sfd);
+	free(request->method);
+	free(request->request_uri);
+	free(request->http_version);
+	free(request->request_header);
+	free(request);
+	free(request_string);
+	return -1;
 }
 
+/*
+ * process_request - fills the @request with the data from @request_string
+ *
+ * Returns 0 on Success, 1 on Failure
+ */
 int process_request(char *request_string, struct request_struct *request)
 {
-	char **words;
-	int i;
+	char **elements;
 
-	words = split_words(request_string);
+	elements = split_words(request_string);
+	if (elements == NULL)
+		goto error;
 
-	for(i = 0; words[i] != NULL; i++) {
-		debug_s("words", words[i]);
-	}
+	if (elements[0] != NULL) 
+		request->method = elements[0];
+	else
+		goto error;
+
+	if (elements[1] != NULL) 
+		request->request_uri = elements[1];
+	else
+		goto error;
+
+	if (elements[2] != NULL) 
+		request->http_version = elements[2];
+	else
+		goto error;
+
+	/* Not required to be set by HTTP specifications, that's why there
+	 * is no else condition
+	 */
+	if (elements[3] != NULL) 
+		request->request_header = elements[3];
+
+	free(elements);
 
 	return 0;
+
+error:
+	free(elements);
+	return 1;
 }
 
 /*
  * split_words - splits the first line of words of a @text in a array of single
  * words and returns this array. The last element is NULL.
  *
- * Be careful that you free the memory of the array
+ * Remember to free the memory of the array
  *
- * TODO When returning NULL, free the memory before returning
- * TODO Don't just neglect the rest of the message after a '\r', '\n' or '\0'
- * 	has been found
+ * Returns NULL on failure and an array of strings called @result otherwise
  */
 char **split_words(char *text)
 {
@@ -131,7 +175,7 @@ char **split_words(char *text)
 		memset(tmp, '\0', sizeof(char) * (wordlen + 1));
 
 		if (strncpy(tmp, text + beginning, wordlen) == NULL)
-			return NULL;
+			goto error;
 
 		result[num_of_words] = tmp;
 		num_of_words++;
@@ -152,7 +196,7 @@ char **split_words(char *text)
 		memset(tmp, '\0', sizeof(char) * (wordlen + 1));
 
 		if (strncpy(tmp, text + i, wordlen) == NULL)
-			return NULL;
+			goto error;
 
 		result[num_of_words] = tmp;
 		num_of_words++;
@@ -163,5 +207,14 @@ char **split_words(char *text)
 
 	result[num_of_words] = NULL;
 	return result;
+
+error:
+	free(tmp);
+	for (i = 0; i <= num_of_words; i++) {
+		free(result[i]);
+	}
+	free(result);
+
+	return NULL;
 }
 

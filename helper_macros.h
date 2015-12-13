@@ -30,14 +30,14 @@
 	if ((var) != 0) {						\
 		debug_s("Not equal 0", #var);				\
 		debug_s("errno", strerror(errno));			\
-		exit(var);						\
+		goto error;						\
 	}
 
 #define test_mem(var)							\
 	if ((var) == NULL) {						\
 		debug_s("Null Pointer", #var);				\
 		debug_s("errno", strerror(errno));			\
-		exit(-ENOMEM);						\
+		goto error;						\
 	}
 
 #endif /* HELPER_MACROS */
