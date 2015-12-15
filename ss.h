@@ -18,14 +18,11 @@
 
 #define REQUEST_SIZE sizeof(char) * 25
 
-struct request_struct {
-	char *method;
-	char *request_uri;
-	char *http_version;
-	char *request_header;
-};
+#define SUPPORTED_VERSIONS 1
+char **supported_versions_array;
 
-int build_request_method_array();
+int init_request_method_array();
+int init_supported_versions_array();
 
 #endif /* SS_H */
 

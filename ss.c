@@ -1,6 +1,7 @@
 #include "ss.h"
 #include "helper_macros.h"
 #include "request.h"
+#include "response.h"
 
 int main (int argc, char *argv[])
 {
@@ -10,6 +11,9 @@ int main (int argc, char *argv[])
 	char *request_string;
 	int request_size;
 	struct request_struct *request;
+
+	int response_code;
+	struct response_struct *response;
 
 	struct in_addr inet_addr;
 	struct sockaddr_in sock_addr;
@@ -29,7 +33,12 @@ int main (int argc, char *argv[])
 	test_mem(request);
 	memset(request, '\0', sizeof(struct request_struct));
 
-	test(build_request_method_array());
+	response = malloc(sizeof(struct response_struct));
+	test_mem(response);
+	memset(response, '\0', sizeof(struct response_struct));
+
+	test(init_request_method_array());
+	test(init_supported_versions_array());
 
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sfd == -1)
@@ -59,13 +68,18 @@ int main (int argc, char *argv[])
 			memset(request_string + request_size, '\0', REQUEST_SIZE);
 		}
 
-		test(process_request(request_string, request));
-		//TODO make_response();
+		response_code = process_request(request_string, request);
+		if (make_response(response, request, response_code)) {
+			/* it failed, so return a internal server error */
+			//TODO
+		}
 		write(cfd, test, strlen(test));
 
 		debug_s("Method", request->method);
 
 		close(cfd);
+
+		//TODO free response
 
 		free(request->method);
 		free(request->request_uri);
@@ -94,7 +108,21 @@ error:
 	return -1;
 }
 
-int build_request_method_array()
+int init_supported_versions_array()
+{
+	supported_versions_array = malloc(sizeof(char *) * (SUPPORTED_VERSIONS + 1));
+	test_mem(supported_versions_array);
+
+	supported_versions_array[0] = "HTTP/1.1";
+	supported_versions_array[SUPPORTED_VERSIONS] = "HTTP/1.1";
+
+	return 0;
+
+error:
+	return 1;
+}
+
+int init_request_method_array()
 {
 	request_method_array = malloc(sizeof(char *) * (REQUEST_METHODS + 1));
 	test_mem(request_method_array);
@@ -107,7 +135,7 @@ int build_request_method_array()
 	request_method_array[5] = "DELETE";
 	request_method_array[6] = "TRACE";
 	request_method_array[7] = "CONNECT";
-	request_method_array[8] = NULL;
+	request_method_array[REQUEST_METHODS] = NULL;
 
 	return 0;
 

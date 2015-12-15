@@ -1,4 +1,5 @@
 #include "request.h"
+#include "response.h"
 
 int in_array(const char *element, char **array)
 {
@@ -16,21 +17,27 @@ int in_array(const char *element, char **array)
 /*
  * process_request - fills the @request with the data from @request_string
  *
- * Returns 0 on Success, 1 on Failure
+ * Returns HTTP Status Code
  */
 int process_request(char *request_string, struct request_struct *request)
 {
 	char **elements;
+	int code;
+
+	code = OK;
 
 	elements = split_words(request_string);
 	if (elements == NULL)
 		goto error;
 
 	if (elements[0] != NULL) 
-		if (in_array(elements[0], request_method_array))
+		if (in_array(elements[0], request_method_array)) {
 			request->method = elements[0];
-		else
+		}
+		else {
+			code = BAD_REQUEST;
 			goto error;
+		}
 	else
 		goto error;
 
@@ -40,7 +47,13 @@ int process_request(char *request_string, struct request_struct *request)
 		goto error;
 
 	if (elements[2] != NULL) 
-		request->http_version = elements[2];
+		if (in_array(elements[2], supported_versions_array)) {
+			request->http_version = elements[2];
+		}
+		else {
+			code = HTTP_VERSION_NOT_SUPPORTED;
+			goto error;
+		}
 	else
 		goto error;
 
@@ -50,12 +63,9 @@ int process_request(char *request_string, struct request_struct *request)
 	if (elements[3] != NULL) 
 		request->request_header = elements[3];
 
-	free(elements);
-	return 0;
-
 error:
 	free(elements);
-	return 1;
+	return code;
 }
 
 /*
