@@ -1,5 +1,6 @@
 #include "ss.h"
 #include "helper_macros.h"
+#include "request.h"
 
 int main (int argc, char *argv[])
 {
@@ -27,6 +28,8 @@ int main (int argc, char *argv[])
 	request = malloc(sizeof(struct request_struct));
 	test_mem(request);
 	memset(request, '\0', sizeof(struct request_struct));
+
+	test(build_request_method_array());
 
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sfd == -1)
@@ -75,6 +78,7 @@ int main (int argc, char *argv[])
 
 	close(sfd);
 	free(request);
+	free(request_method_array);
 
 	return 0;
 
@@ -85,136 +89,29 @@ error:
 	free(request->http_version);
 	free(request->request_header);
 	free(request);
+	free(request_method_array);
 	free(request_string);
 	return -1;
 }
 
-/*
- * process_request - fills the @request with the data from @request_string
- *
- * Returns 0 on Success, 1 on Failure
- */
-int process_request(char *request_string, struct request_struct *request)
+int build_request_method_array()
 {
-	char **elements;
+	request_method_array = malloc(sizeof(char *) * (REQUEST_METHODS + 1));
+	test_mem(request_method_array);
 
-	elements = split_words(request_string);
-	if (elements == NULL)
-		goto error;
-
-	if (elements[0] != NULL) 
-		request->method = elements[0];
-	else
-		goto error;
-
-	if (elements[1] != NULL) 
-		request->request_uri = elements[1];
-	else
-		goto error;
-
-	if (elements[2] != NULL) 
-		request->http_version = elements[2];
-	else
-		goto error;
-
-	/* Not required to be set by HTTP specifications, that's why there
-	 * is no else condition
-	 */
-	if (elements[3] != NULL) 
-		request->request_header = elements[3];
-
-	free(elements);
+	request_method_array[0] = "GET";
+	request_method_array[1] = "POST";
+	request_method_array[2] = "OPTIONS";
+	request_method_array[3] = "HEAD";
+	request_method_array[4] = "PUT";
+	request_method_array[5] = "DELETE";
+	request_method_array[6] = "TRACE";
+	request_method_array[7] = "CONNECT";
+	request_method_array[8] = NULL;
 
 	return 0;
 
 error:
-	free(elements);
 	return 1;
-}
-
-/*
- * split_words - splits the first line of words of a @text in a array of single
- * words and returns this array. The last element is NULL.
- *
- * Remember to free the memory of the array
- *
- * Returns NULL on failure and an array of strings called @result otherwise
- */
-char **split_words(char *text)
-{
-	int i, beginning, wordlen, num_of_words;
-	char *tmp;
-	char **result;
-
-	num_of_words = 0;
-
-	for (i = 0; text[i] != '\0'; i++) {
-		if (text[i] == ' ') 
-			continue;
-		else
-			break;
-	}
-
-	/* No useful data in the text */
-	if (text[i] == '\0')
-		return NULL;
-
-	result = malloc(sizeof(char *));
-	test_mem(result);
-
-	/* Now we know the current text[i] is something we can work with */
-	while (text[i] != '\0' && text[i] != '\r' && text[i] != '\n') {
-		beginning = i;
-
-		/* skip over the word */
-		for (; text[i] != '\0' && text[i] != ' ' && text[i] != '\r' && text[i] != '\n'; i++) {}
-		wordlen = i - beginning;
-	
-		tmp = malloc(sizeof(char) * (wordlen + 1));
-		test_mem(tmp);
-		memset(tmp, '\0', sizeof(char) * (wordlen + 1));
-
-		if (strncpy(tmp, text + beginning, wordlen) == NULL)
-			goto error;
-
-		result[num_of_words] = tmp;
-		num_of_words++;
-
-		/* skip the space */
-		for (; text[i] == ' '; i++) {}
-
-		/* 1 is the memory of the first one */
-		result = realloc(result, sizeof(char *) * (1 + num_of_words)); 
-		test_mem(result);
-	}
-
-	/* Add the Request Header to result */
-	if (text[i] != '\0') {
-		wordlen = strlen(text) - i;
-		tmp = malloc(sizeof(char) * (wordlen + 1));
-		test_mem(tmp);
-		memset(tmp, '\0', sizeof(char) * (wordlen + 1));
-
-		if (strncpy(tmp, text + i, wordlen) == NULL)
-			goto error;
-
-		result[num_of_words] = tmp;
-		num_of_words++;
-
-		result = realloc(result, sizeof(char *) * (1 + num_of_words));
-		test_mem(result);
-	}
-
-	result[num_of_words] = NULL;
-	return result;
-
-error:
-	free(tmp);
-	for (i = 0; i <= num_of_words; i++) {
-		free(result[i]);
-	}
-	free(result);
-
-	return NULL;
 }
 

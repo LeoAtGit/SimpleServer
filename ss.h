@@ -1,3 +1,6 @@
+#ifndef SS_H
+#define SS_H
+
 #include <netinet/in.h> /* internet stuff, e.g. bind */
 #include <sys/socket.h> /* socket() */
 #include <sys/types.h> /* many stuff */
@@ -22,6 +25,7 @@ struct request_struct {
 	char *request_header;
 };
 
-int process_request(char *request_string, struct request_struct *request);
-char **split_words(char *text);
+int build_request_method_array();
+
+#endif /* SS_H */
 
