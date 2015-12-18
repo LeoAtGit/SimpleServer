@@ -22,7 +22,6 @@ int main (int argc, char *argv[])
 	uint16_t port_local;
 
 	int i;
-	char test[] = "HTTP/1.1 200 OK\n\n<!doctype html><html><h1>Test lol</h1><img src=\"test.jpg\" /></html>";
 
 	request_string = NULL;
 
@@ -69,17 +68,11 @@ int main (int argc, char *argv[])
 		}
 
 		response_code = process_request(request_string, request);
-		if (make_response(response, request, response_code)) {
+		if (make_response(response, request, response_code, cfd)) {
 			/* it failed, so return a internal server error */
 			//TODO
 		}
-		write(cfd, test, strlen(test));
-
-		debug_s("Method", request->method);
-
 		close(cfd);
-
-		//TODO free response
 
 		free(request->method);
 		free(request->request_uri);
@@ -91,19 +84,23 @@ int main (int argc, char *argv[])
 	}
 
 	close(sfd);
+	free(response);
 	free(request);
 	free(request_method_array);
+	free(supported_versions_array);
 
 	return 0;
 
 error:
 	close(sfd);
+	free(response);
 	free(request->method);
 	free(request->request_uri);
 	free(request->http_version);
 	free(request->request_header);
 	free(request);
 	free(request_method_array);
+	free(supported_versions_array);
 	free(request_string);
 	return -1;
 }

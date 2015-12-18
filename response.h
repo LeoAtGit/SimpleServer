@@ -62,8 +62,10 @@ struct response_struct {
 	void *message_body;
 };
 
-int make_response(struct response_struct *response, struct request_struct *request, int status_code);
-int change_status_code(struct response_struct *response, int code);
+int make_response(struct response_struct *response, struct request_struct *request, int status_code, int fd);
+int choose_reason_phrase(struct response_struct *response);
+int generate_message_body(struct response_struct *response, char *request_uri);
+int write_response(int fd, struct response_struct *response);
 
 #endif /* RESPONSE_H */
 
