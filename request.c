@@ -28,6 +28,7 @@ int process_request(char *request_string, struct request_struct *request)
 
 	elements = split_words(request_string);
 	if (elements == NULL)
+		code = NOT_IMPLEMENTED;
 		goto error;
 
 	if (elements[0] != NULL) 
@@ -39,11 +40,13 @@ int process_request(char *request_string, struct request_struct *request)
 			goto error;
 		}
 	else
+		code = NOT_IMPLEMENTED;
 		goto error;
 
 	if (elements[1] != NULL) 
 		request->request_uri = elements[1];
 	else
+		code = NOT_IMPLEMENTED;
 		goto error;
 
 	if (elements[2] != NULL) 
@@ -55,6 +58,7 @@ int process_request(char *request_string, struct request_struct *request)
 			goto error;
 		}
 	else
+		code = NOT_IMPLEMENTED;
 		goto error;
 
 	/* Not required to be set by HTTP specifications, that's why there
@@ -126,7 +130,11 @@ char **split_words(char *text)
 
 	/* Add the Request Header to result */
 	if (text[i] != '\0') {
-		wordlen = strlen(text) - i;
+		if (text != NULL) {
+			wordlen = strlen(text) - i;
+		} else {
+			goto error;
+		}
 		tmp = malloc(sizeof(char) * (wordlen + 1));
 		test_mem(tmp);
 		memset(tmp, '\0', sizeof(char) * (wordlen + 1));

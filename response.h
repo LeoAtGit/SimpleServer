@@ -3,6 +3,10 @@
 
 #include "request.h"
 
+#ifndef DOC_ROOT
+	#define DOC_ROOT "html"
+#endif /* DOC_ROOT */
+
 #define CONTINUE 100
 #define OK  200
 #define BAD_REQUEST  400
@@ -35,7 +39,6 @@
 	"404" Not Found
 	"405" Method Not Allowed
 	"406" Not Acceptable
-
 	"407" Proxy Authentication Required
 	"408" Request Time-out
 	"409" Conflict

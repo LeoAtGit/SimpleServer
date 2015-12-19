@@ -1,7 +1,4 @@
 #include "ss.h"
-#include "helper_macros.h"
-#include "request.h"
-#include "response.h"
 
 int main (int argc, char *argv[])
 {
@@ -60,19 +57,47 @@ int main (int argc, char *argv[])
 
 		cfd = accept(sfd, NULL, 0);
 		request_size = 0;
-		while(read(cfd, request_string + request_size, REQUEST_SIZE) == REQUEST_SIZE) {
+
+		/* We first have to do a blocking read call, so that we don't
+		 * just get empty data because recv doesn't wait for the data
+		 * to arrive */
+		if (read(cfd, request_string, REQUEST_SIZE) == REQUEST_SIZE) {
+			request_size += REQUEST_SIZE;
+			request_string = realloc(request_string, REQUEST_SIZE + request_size);
+			test_mem(request_string);
+			memset(request_string + request_size, '\0', REQUEST_SIZE);
+		}
+		/* Non-blocking recv calls */
+		while(recv(cfd, request_string + request_size, REQUEST_SIZE, MSG_DONTWAIT) == REQUEST_SIZE) {
 			request_size += REQUEST_SIZE;
 			request_string = realloc(request_string, REQUEST_SIZE + request_size);
 			test_mem(request_string);
 			memset(request_string + request_size, '\0', REQUEST_SIZE);
 		}
 
-		response_code = process_request(request_string, request);
+		if (request_string != NULL) {
+			response_code = process_request(request_string, request);
+		} else {
+			response->http_version = "HTTP/1.1";
+			response->status_code = 500;
+			choose_reason_phrase(response);
+			response->message_body = "<!doctype html><html><body>Internal Server Error</body><html>";
+			/* if this fails again, don't retry, just close the connection */
+			write_response(cfd, response);
+		}
+
 		if (make_response(response, request, response_code, cfd)) {
 			/* it failed, so return a internal server error */
-			//TODO
+			response->http_version = "HTTP/1.1";
+			response->status_code = 500;
+			choose_reason_phrase(response);
+			response->message_body = "<!doctype html><html><body>Internal Server Error</body><html>";
+			/* if this fails again, don't retry, just close the connection */
+			write_response(cfd, response);
 		}
 		close(cfd);
+
+		debug_s("Request_uri", request->request_uri);
 
 		free(request->method);
 		free(request->request_uri);

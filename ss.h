@@ -16,6 +16,10 @@
 #include <errno.h>  /* errno() */
 #include <fcntl.h>  /* open() */
 
+#include "helper_macros.h"
+#include "request.h"
+#include "response.h"
+
 #define REQUEST_SIZE sizeof(char) * 25
 
 #define SUPPORTED_VERSIONS 1

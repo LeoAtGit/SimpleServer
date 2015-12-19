@@ -1,3 +1,6 @@
+# Implement this:
+# TODO -DDOC_ROOT=/test
+
 # Uncomment the next line if you don't want debug output
 debug = -DDEBUG -ggdb
 
