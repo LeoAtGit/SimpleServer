@@ -27,45 +27,48 @@ int process_request(char *request_string, struct request_struct *request)
 	code = OK;
 
 	elements = split_words(request_string);
-	if (elements == NULL)
+	if (elements == NULL) {
 		code = NOT_IMPLEMENTED;
 		goto error;
+	}
 
-	if (elements[0] != NULL) 
+	if (elements[0] != NULL) {
 		if (in_array(elements[0], request_method_array)) {
 			request->method = elements[0];
-		}
-		else {
+		} else {
 			code = BAD_REQUEST;
 			goto error;
 		}
-	else
+	} else {
 		code = NOT_IMPLEMENTED;
 		goto error;
+	}
 
-	if (elements[1] != NULL) 
+	if (elements[1] != NULL) {
 		request->request_uri = elements[1];
-	else
+	} else {
 		code = NOT_IMPLEMENTED;
 		goto error;
+	}
 
-	if (elements[2] != NULL) 
+	if (elements[2] != NULL) {
 		if (in_array(elements[2], supported_versions_array)) {
 			request->http_version = elements[2];
-		}
-		else {
+		} else {
 			code = HTTP_VERSION_NOT_SUPPORTED;
 			goto error;
 		}
-	else
+	} else {
 		code = NOT_IMPLEMENTED;
 		goto error;
+	}
 
 	/* Not required to be set by HTTP specifications, that's why there
 	 * is no else condition
 	 */
-	if (elements[3] != NULL) 
+	if (elements[3] != NULL) {
 		request->request_header = elements[3];
+	}
 
 error:
 	free(elements);
