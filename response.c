@@ -31,6 +31,14 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 	int docroot_strlen;
 	int request_strlen;
 
+	int fd_request;
+	char *response_body;
+	int response_size;
+	int read_bytes;
+
+	total_bytes_read = 0;
+	read_bytes = 0;
+
 	docroot_strlen = strlen(DOC_ROOT);
 	request_strlen = strlen(request_uri);
 
@@ -38,15 +46,52 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 	test_mem(filepath);
 	strncpy(filepath, DOC_ROOT, docroot_strlen);
 	strncpy(filepath + docroot_strlen, request_uri, request_strlen);
-	filepath[request_strlen + 1] = '\0';
+	filepath[docroot_strlen + request_strlen] = '\0';
 
 	//TODO check privileges
+	
+	//debug_s("filepath", filepath);
 
-	response->message_body = "<!doctype html><html><h1>Test haha</h1><img src=\"test.jpg\" /></html>";
+	fd_request = open(filepath, O_RDONLY);
+	if (fd_request == -1) {
+		/* File does not exist */
+		response->status_code = NOT_FOUND;
+		goto error;
+	}
 
+	response_body = malloc(READ_SIZE);
+	test_mem(response_body);
+	memset(response_body, '\0', READ_SIZE);
+
+	response_size = 0;
+
+	do {
+		read_bytes = read(fd_request, response_body + response_size, READ_SIZE);
+		response_size += read_bytes;
+		response_body = realloc(response_body, READ_SIZE + response_size);
+		test_mem(response_body);
+		memset(response_body + response_size, '\0', READ_SIZE);
+	} while (read_bytes == READ_SIZE);
+
+	/*while (read(fd_request, response_body + response_size, READ_SIZE) == READ_SIZE) {
+		response_size += READ_SIZE;
+		response_body = realloc(response_body, READ_SIZE + response_size);
+		test_mem(response_body);
+		memset(response_body + response_size, '\0', READ_SIZE);
+	}*/
+
+	total_bytes_read = response_size;
+	response->message_body = response_body;
+
+	debug_n("total_bytes_read", total_bytes_read);
+
+	close(fd_request);
+	free(filepath);
 	return 0;
 
 error:
+	close(fd_request);
+	free(filepath);
 	return -1;
 }
 
@@ -59,7 +104,7 @@ int write_response(int fd, struct response_struct *response)
 
 	snprintf(response_status_code, 4, "%d", response->status_code);
 
-	total_strlen = strlen(response->http_version) + strlen(response_status_code) + strlen(response->reason_phrase) + strlen(response->message_body) + 5; /* 5 = " " and "\n\n" and "\0" */
+	total_strlen = strlen(response->http_version) + strlen(response_status_code) + strlen(response->reason_phrase) + total_bytes_read + 5; /* 5 = " " and " " and "\n\n" and "\0" */
 
 	if (total_strlen)
 		response_str = malloc(sizeof(char) * total_strlen);
@@ -85,15 +130,15 @@ int write_response(int fd, struct response_struct *response)
 	response_str[bytes_written] = '\n';
 	bytes_written++;
 
-	strncpy(response_str + bytes_written, response->message_body, strlen(response->message_body));
-	bytes_written += strlen(response->message_body);
+	strncpy(response_str + bytes_written, response->message_body, total_bytes_read);
+	bytes_written += total_bytes_read;
 	response_str[bytes_written] = '\0';
 
 	if (write(fd, response_str, total_strlen) != total_strlen) {
 		debug_s("write", "failed, didn't write all of the data\n");
 		goto error;
 	}
-
+	
 	free(response_str);
 	return 0;
 

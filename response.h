@@ -7,6 +7,10 @@
 	#define DOC_ROOT "html"
 #endif /* DOC_ROOT */
 
+int total_bytes_read;
+
+#define READ_SIZE sizeof(char) * 100
+
 #define CONTINUE 100
 #define OK  200
 #define BAD_REQUEST  400
@@ -58,6 +62,7 @@
 	"505" HTTP Version not supported
 */
 
+struct request_struct;
 struct response_struct {
 	char *http_version;
 	int status_code;

@@ -68,7 +68,7 @@ int main (int argc, char *argv[])
 			memset(request_string + request_size, '\0', REQUEST_SIZE);
 		}
 		/* Non-blocking recv calls */
-		while(recv(cfd, request_string + request_size, REQUEST_SIZE, MSG_DONTWAIT) == REQUEST_SIZE) {
+		while (recv(cfd, request_string + request_size, REQUEST_SIZE, MSG_DONTWAIT) == REQUEST_SIZE) {
 			request_size += REQUEST_SIZE;
 			request_string = realloc(request_string, REQUEST_SIZE + request_size);
 			test_mem(request_string);
@@ -99,6 +99,7 @@ int main (int argc, char *argv[])
 
 		debug_s("Request_uri", request->request_uri);
 
+		//free(response->message_body);
 		free(request->method);
 		free(request->request_uri);
 		free(request->http_version);
@@ -109,6 +110,7 @@ int main (int argc, char *argv[])
 	}
 
 	close(sfd);
+	//free(response->message_body);
 	free(response);
 	free(request);
 	free(request_method_array);

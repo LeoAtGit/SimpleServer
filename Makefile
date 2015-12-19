@@ -5,7 +5,7 @@
 debug = -DDEBUG -ggdb
 
 all: request.o main.o response.o
-	gcc -std=c99 -Wall -pedantic $(debug) request.o response.o main.o -o simpleserver
+	gcc -std=c99 -Wall -pedantic $(debug) main.o request.o response.o -o simpleserver
 
 main.o: ss.c ss.h
 	gcc -c -std=c99 -Wall -pedantic $(debug) ss.c -o main.o

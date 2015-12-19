@@ -1,5 +1,4 @@
 #include "request.h"
-#include "response.h"
 
 int in_array(const char *element, char **array)
 {
