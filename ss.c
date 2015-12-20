@@ -18,7 +18,13 @@ int main (int argc, char *argv[])
 	uint32_t ip_addr_local;
 	uint16_t port_local;
 
+	int i;
+
 	request_string = NULL;
+	request = NULL;
+	response = NULL;
+	request_method_array = NULL;
+	supported_versions_array = NULL;
 
 	ip_addr_local = 3232236134; /* 192.168.2.102 */
 	port_local = 12345;
@@ -48,7 +54,7 @@ int main (int argc, char *argv[])
 	
 	test(listen(sfd, 1)); /* 1 is the backlog */ //FIXME ???
 
-	for(;;) {
+	for(i = 0; i<1; i++) {
 		request_string = malloc(REQUEST_SIZE);
 		test_mem(request_string);
 		memset(request_string, '\0', REQUEST_SIZE);
@@ -64,51 +70,41 @@ int main (int argc, char *argv[])
 			request_string = realloc(request_string, REQUEST_SIZE + request_size);
 			test_mem(request_string);
 			memset(request_string + request_size, '\0', REQUEST_SIZE);
-		}
-		/* Non-blocking recv calls */
-		while (recv(cfd, request_string + request_size, REQUEST_SIZE, MSG_DONTWAIT) == REQUEST_SIZE) {
-			request_size += REQUEST_SIZE;
-			request_string = realloc(request_string, REQUEST_SIZE + request_size);
-			test_mem(request_string);
-			memset(request_string + request_size, '\0', REQUEST_SIZE);
+			
+			/* Non-blocking recv calls */
+			while (recv(cfd, request_string + request_size, REQUEST_SIZE, MSG_DONTWAIT) == REQUEST_SIZE) {
+				request_size += REQUEST_SIZE;
+				request_string = realloc(request_string, REQUEST_SIZE + request_size);
+				test_mem(request_string);
+				memset(request_string + request_size, '\0', REQUEST_SIZE);
+			}
 		}
 
 		if (request_string != NULL) {
-			response_code = process_request(request_string, request);
+			response->status_code = process_request(request_string, request); //TODO test this
 		} else {
-			response->http_version = "HTTP/1.1";
 			response->status_code = 500;
-			choose_reason_phrase(response);
-			response->message_body = "<!doctype html><html><body>Internal Server Error</body><html>";
-			/* if this fails again, don't retry, just close the connection */
-			write_response(cfd, response);
 		}
 
-		if (make_response(response, request, response_code, cfd)) {
-			/* it failed, so return a internal server error */
-			response->http_version = "HTTP/1.1";
+		if (make_response(response, request, cfd)) {
 			response->status_code = 500;
-			choose_reason_phrase(response);
-			response->message_body = "<!doctype html><html><body>Internal Server Error</body><html>";
-			/* if this fails again, don't retry, just close the connection */
-			write_response(cfd, response);
+			/* Try it one more time with different status code */
+			make_response(response, request, cfd);
 		}
-		close(cfd);
 
 		debug_s("Request_uri", request->request_uri);
 
-		//free(response->message_body);
+		close(cfd);
+		free(response->message_body);
 		free(request->method);
 		free(request->request_uri);
 		free(request->http_version);
 		free(request->request_header);
-
 		memset(request_string, '\0', REQUEST_SIZE + request_size);
 		free(request_string);
 	}
 
 	close(sfd);
-	//free(response->message_body);
 	free(response);
 	free(request);
 	free(request_method_array);
@@ -117,12 +113,13 @@ int main (int argc, char *argv[])
 	return 0;
 
 error:
+	//TODO Log what happened
 	close(sfd);
-	free(response);
 	free(request->method);
 	free(request->request_uri);
 	free(request->http_version);
 	free(request->request_header);
+	free(response);
 	free(request);
 	free(request_method_array);
 	free(supported_versions_array);

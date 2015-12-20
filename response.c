@@ -1,21 +1,27 @@
 #include "response.h"
 
-int make_response(struct response_struct *response, struct request_struct *request, int status_code, int fd)
+/* 
+ * make_response - main function for filling the @response with the correct 
+ * information gotten from @request and sending it back to the file descriptor
+ * @fd of the client. If the status code is not OK (200), then don't even do
+ * rest, since there was a previous error.
+ *
+ * Returns 0 on success and -1 on failure
+ */
+int make_response(struct response_struct *response, struct request_struct *request, int fd)
 {
 	response->message_body = "";
-	response->http_version = request->http_version; //FIXME don't lie here
-	if (status_code == OK)
-		response->status_code = status_code;
-	else
-		goto exit;
-	
-	generate_message_body(response, request->request_uri);
+	response->http_version = "HTTP/1.1"; //TODO find a better way to do this
 
-exit:
-	if (choose_reason_phrase(response) != 0) {
-		debug_s("choose_reason_phrase", "No valid case found!\n");
-		return -1;
+	if (response->status_code == OK) {
+		generate_message_body(response, request->request_uri);
+	} else {
+		//TODO get the message body from template
+		//Warning: you have to actually malloc memory for message_body,
+		//because that will get freed in main
 	}
+
+	choose_reason_phrase(response);
 
 	if (write_response(fd, response) != 0) {
 		debug_s("write_response", "No successful write\n");
@@ -25,6 +31,16 @@ exit:
 	return 0;
 }
 
+/*
+ * generate_message_body - looks what the request uri from @request_uri is,
+ * performs some checks to see whether you are allowed to see that file and
+ * saves it finally in the @response->message_body
+ *
+ * Returns 0 on success and -1 on failure
+ *
+ * Mallocs and Frees: filepath
+ * Mallocs: response_body => passed to response->message_body
+ */
 int generate_message_body(struct response_struct *response, char *request_uri)
 {
 	char *filepath;
@@ -96,6 +112,14 @@ error:
 	return -1;
 }
 
+/*
+ * write_response - puts all the pieces from @response together and sends it to
+ * the client file descriptor @fd
+ *
+ * Returns 0 on success and -1 on failure
+ *
+ * Mallocs and Frees: response_str
+ */
 int write_response(int fd, struct response_struct *response)
 {
 	int total_strlen;
@@ -148,6 +172,12 @@ error:
 	return -1;
 }
 
+/*
+ * choose_reason_phrase - Checks the status code from @response->status_code and
+ * sets the reason phrase for the response accordingly
+ *
+ * Returns 0 on success
+ */
 int choose_reason_phrase(struct response_struct *response)
 {
 	switch (response->status_code) {
@@ -173,7 +203,8 @@ int choose_reason_phrase(struct response_struct *response)
 			response->reason_phrase = "HTTP Version not supported";
 			break;
 		default:
-			return -1;
+			response->status_code = NOT_IMPLEMENTED;
+			response->reason_phrase = "Not Implemented";
 	}
 	return 0;
 }

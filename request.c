@@ -1,5 +1,10 @@
 #include "request.h"
 
+/*
+ * in_array - checks if @element is in @array
+ *
+ * Returns 1 if there was a match, and 0 if there was not
+ */
 int in_array(const char *element, char **array)
 {
 	int i;
@@ -17,6 +22,12 @@ int in_array(const char *element, char **array)
  * process_request - fills the @request with the data from @request_string
  *
  * Returns HTTP Status Code
+ *
+ * Frees: elements
+ * Frees (only on failure): elements[0]
+ *                          elements[1]
+ *                          elements[2]
+ *                          elements[3]
  */
 int process_request(char *request_string, struct request_struct *request)
 {
@@ -36,18 +47,18 @@ int process_request(char *request_string, struct request_struct *request)
 			request->method = elements[0];
 		} else {
 			code = BAD_REQUEST;
-			goto error;
+			goto free_all;
 		}
 	} else {
 		code = NOT_IMPLEMENTED;
-		goto error;
+		goto free_all;
 	}
 
 	if (elements[1] != NULL) {
 		request->request_uri = elements[1];
 	} else {
 		code = NOT_IMPLEMENTED;
-		goto error;
+		goto free_all;
 	}
 
 	if (elements[2] != NULL) {
@@ -55,11 +66,11 @@ int process_request(char *request_string, struct request_struct *request)
 			request->http_version = elements[2];
 		} else {
 			code = HTTP_VERSION_NOT_SUPPORTED;
-			goto error;
+			goto free_all;
 		}
 	} else {
 		code = NOT_IMPLEMENTED;
-		goto error;
+		goto free_all;
 	}
 
 	/* Not required to be set by HTTP specifications, that's why there
@@ -72,15 +83,25 @@ int process_request(char *request_string, struct request_struct *request)
 error:
 	free(elements);
 	return code;
+
+free_all:
+	free(elements[0]);
+	free(elements[1]);
+	free(elements[2]);
+	free(elements[3]);
+	goto error;
 }
 
 /*
  * split_words - splits the first line of words of a @text in a array of single
  * words and returns this array. The last element is NULL.
  *
- * Remember to free the memory of the array
+ * Returns array of strings on success, NULL on failure
  *
- * Returns NULL on failure and an array of strings called @result otherwise
+ * Mallocs and Frees (only on failure): tmp
+ *                                      result
+ * Mallocs: tmp => element of result
+ *          result => is returned
  */
 char **split_words(char *text)
 {

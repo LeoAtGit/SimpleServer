@@ -12,6 +12,7 @@
 	#define DOC_ROOT "html"
 #endif /* DOC_ROOT */
 
+/* global for getting the size of the data of message_body */
 int total_bytes_read;
 
 #define READ_SIZE sizeof(char) * 100
@@ -67,7 +68,9 @@ int total_bytes_read;
 	"505" HTTP Version not supported
 */
 
+/* forward declaration */
 struct request_struct;
+
 struct response_struct {
 	char *http_version;
 	int status_code;
@@ -75,7 +78,7 @@ struct response_struct {
 	void *message_body;
 };
 
-int make_response(struct response_struct *response, struct request_struct *request, int status_code, int fd);
+int make_response(struct response_struct *response, struct request_struct *request, int fd);
 int choose_reason_phrase(struct response_struct *response);
 int generate_message_body(struct response_struct *response, char *request_uri);
 int write_response(int fd, struct response_struct *response);
