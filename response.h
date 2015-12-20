@@ -2,6 +2,11 @@
 #define RESPONSE_H
 
 #include "request.h"
+#include "sys/types.h"
+#include "sys/stat.h"
+#include "fcntl.h"
+#include "unistd.h"
+#include "strings.h"
 
 #ifndef DOC_ROOT
 	#define DOC_ROOT "html"

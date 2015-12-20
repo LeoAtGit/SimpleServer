@@ -36,8 +36,11 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 	int response_size;
 	int read_bytes;
 
+	struct stat stat_buf;
+
 	total_bytes_read = 0;
 	read_bytes = 0;
+	fd_request = -1;
 
 	docroot_strlen = strlen(DOC_ROOT);
 	request_strlen = strlen(request_uri);
@@ -50,9 +53,14 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 
 	//TODO check privileges
 	
-	//debug_s("filepath", filepath);
+	stat(filepath, &stat_buf);
+	if (S_ISDIR(stat_buf.st_mode)) {
+		response->status_code = NOT_FOUND;
+		goto error;
+	} else if (S_ISREG(stat_buf.st_mode)) {
+		fd_request = open(filepath, O_RDONLY);
+	}
 
-	fd_request = open(filepath, O_RDONLY);
 	if (fd_request == -1) {
 		/* File does not exist */
 		response->status_code = NOT_FOUND;
@@ -73,17 +81,10 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 		memset(response_body + response_size, '\0', READ_SIZE);
 	} while (read_bytes == READ_SIZE);
 
-	/*while (read(fd_request, response_body + response_size, READ_SIZE) == READ_SIZE) {
-		response_size += READ_SIZE;
-		response_body = realloc(response_body, READ_SIZE + response_size);
-		test_mem(response_body);
-		memset(response_body + response_size, '\0', READ_SIZE);
-	}*/
-
 	total_bytes_read = response_size;
 	response->message_body = response_body;
 
-	debug_n("total_bytes_read", total_bytes_read);
+	//debug_n("total_bytes_read", total_bytes_read);
 
 	close(fd_request);
 	free(filepath);
@@ -130,7 +131,7 @@ int write_response(int fd, struct response_struct *response)
 	response_str[bytes_written] = '\n';
 	bytes_written++;
 
-	strncpy(response_str + bytes_written, response->message_body, total_bytes_read);
+	bcopy(response->message_body, response_str + bytes_written, total_bytes_read);
 	bytes_written += total_bytes_read;
 	response_str[bytes_written] = '\0';
 

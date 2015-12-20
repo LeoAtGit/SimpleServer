@@ -18,8 +18,6 @@ int main (int argc, char *argv[])
 	uint32_t ip_addr_local;
 	uint16_t port_local;
 
-	int i;
-
 	request_string = NULL;
 
 	ip_addr_local = 3232236134; /* 192.168.2.102 */
@@ -50,7 +48,7 @@ int main (int argc, char *argv[])
 	
 	test(listen(sfd, 1)); /* 1 is the backlog */ //FIXME ???
 
-	for(i = 0; i<2; i++) { //FIXME for infinite loop
+	for(;;) {
 		request_string = malloc(REQUEST_SIZE);
 		test_mem(request_string);
 		memset(request_string, '\0', REQUEST_SIZE);
