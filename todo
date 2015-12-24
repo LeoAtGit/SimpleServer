@@ -4,4 +4,5 @@
 - add multithreading
 - make it a daemon
 - catch SIGINT
+- make some functions return void
 

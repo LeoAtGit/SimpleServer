@@ -2,11 +2,14 @@
 #define RESPONSE_H
 
 #include "request.h"
-#include "sys/types.h"
+/*#include "sys/types.h"
 #include "sys/stat.h"
 #include "fcntl.h"
 #include "unistd.h"
-#include "strings.h"
+*/
+#include <strings.h>
+
+#include "helper_macros.h"
 
 #ifndef DOC_ROOT
 	#define DOC_ROOT "html"
@@ -81,6 +84,7 @@ struct response_struct {
 int make_response(struct response_struct *response, struct request_struct *request, int fd);
 int choose_reason_phrase(struct response_struct *response);
 int generate_message_body(struct response_struct *response, char *request_uri);
+int generate_error_template(struct response_struct *response);
 int write_response(int fd, struct response_struct *response);
 
 #endif /* RESPONSE_H */

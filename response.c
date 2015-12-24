@@ -14,20 +14,52 @@ int make_response(struct response_struct *response, struct request_struct *reque
 	response->http_version = "HTTP/1.1"; //TODO find a better way to do this
 
 	if (response->status_code == OK) {
-		generate_message_body(response, request->request_uri);
+		if (generate_message_body(response, request->request_uri) == -1) {
+			goto error_template;
+		}
 	} else {
-		//TODO get the message body from template
-		//Warning: you have to actually malloc memory for message_body,
-		//because that will get freed in main
+error_template:
+		choose_reason_phrase(response);
+		generate_error_template(response);
 	}
-
-	choose_reason_phrase(response);
 
 	if (write_response(fd, response) != 0) {
 		debug_s("write_response", "No successful write\n");
 		return -1;
 	}
 
+	return 0;
+}
+
+/*
+ * generate_error_template - if there was a error status code this function
+ * generates the message_body of the response
+ *
+ * Always returns 0
+ *
+ * Mallocs: response_body => passed to response->message_body
+ */
+int generate_error_template(struct response_struct *response)
+{
+	char *response_body;
+
+	char HTML_START[] = "<!doctype html><html><body>";
+	char HTML_END[] = "</body></html>";
+	int STRLEN_HTML_WRAPPER = strlens(HTML_START) + strlens(HTML_END);
+
+	choose_reason_phrase(response);
+	response_body = malloc(sizeof(char) * (STRLEN_HTML_WRAPPER + strlens(response->reason_phrase) + 1));
+	test_mem(response_body);
+	memset(response_body, '\0', sizeof(char) * (STRLEN_HTML_WRAPPER + strlens(response->reason_phrase) + 1));
+
+	strncpy(response_body, HTML_START, strlens(HTML_START));
+	strncpy(response_body + strlens(HTML_START), response->reason_phrase, strlens(response->reason_phrase));
+	strncpy(response_body + strlens(HTML_START) + strlens(response->reason_phrase), HTML_END, strlens(HTML_END));
+
+	response->message_body = response_body;
+	total_bytes_read = strlens(response->message_body);
+
+error:
 	return 0;
 }
 
@@ -57,9 +89,12 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 	total_bytes_read = 0;
 	read_bytes = 0;
 	fd_request = -1;
+	filepath = NULL;
+	response_body = NULL;
+	memset(&stat_buf, '\0', sizeof(struct stat));
 
-	docroot_strlen = strlen(DOC_ROOT);
-	request_strlen = strlen(request_uri);
+	docroot_strlen = strlens(DOC_ROOT);
+	request_strlen = strlens(request_uri);
 
 	filepath = malloc(sizeof(char) * (docroot_strlen + request_strlen + 1));
 	test_mem(filepath);
@@ -107,7 +142,8 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 	return 0;
 
 error:
-	close(fd_request);
+	if (fd_request != -1)
+		close(fd_request);
 	free(filepath);
 	return -1;
 }
@@ -129,7 +165,7 @@ int write_response(int fd, struct response_struct *response)
 
 	snprintf(response_status_code, 4, "%d", response->status_code);
 
-	total_strlen = strlen(response->http_version) + strlen(response_status_code) + strlen(response->reason_phrase) + total_bytes_read + 5; /* 5 = " " and " " and "\n\n" and "\0" */
+	total_strlen = strlens(response->http_version) + strlens(response_status_code) + strlens(response->reason_phrase) + total_bytes_read + 5; /* 5 = " " and " " and "\n\n" and "\0" */
 
 	if (total_strlen)
 		response_str = malloc(sizeof(char) * total_strlen);
@@ -138,18 +174,18 @@ int write_response(int fd, struct response_struct *response)
 
 	bytes_written = 0;
 
-	strncpy(response_str + bytes_written, response->http_version, strlen(response->http_version));
-	bytes_written += strlen(response->http_version);
+	strncpy(response_str + bytes_written, response->http_version, strlens(response->http_version));
+	bytes_written += strlens(response->http_version);
 	response_str[bytes_written] = ' ';
 	bytes_written++;
 	
-	strncpy(response_str + bytes_written, response_status_code, strlen(response_status_code));
-	bytes_written += strlen(response_status_code);
+	strncpy(response_str + bytes_written, response_status_code, strlens(response_status_code));
+	bytes_written += strlens(response_status_code);
 	response_str[bytes_written] = ' ';
 	bytes_written++;
 	
-	strncpy(response_str + bytes_written, response->reason_phrase, strlen(response->reason_phrase));
-	bytes_written += strlen(response->reason_phrase);
+	strncpy(response_str + bytes_written, response->reason_phrase, strlens(response->reason_phrase));
+	bytes_written += strlens(response->reason_phrase);
 	response_str[bytes_written] = '\n';
 	bytes_written++;
 	response_str[bytes_written] = '\n';

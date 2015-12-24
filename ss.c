@@ -8,8 +8,6 @@ int main (int argc, char *argv[])
 	char *request_string;
 	int request_size;
 	struct request_struct *request;
-
-	int response_code;
 	struct response_struct *response;
 
 	struct in_addr inet_addr;
@@ -54,7 +52,7 @@ int main (int argc, char *argv[])
 	
 	test(listen(sfd, 1)); /* 1 is the backlog */ //FIXME ???
 
-	for(i = 0; i<1; i++) {
+	for(i = 0; i<9; i++) {
 		request_string = malloc(REQUEST_SIZE);
 		test_mem(request_string);
 		memset(request_string, '\0', REQUEST_SIZE);

@@ -40,5 +40,7 @@
 		goto error;						\
 	}
 
+#define strlens(var) (var == NULL ? 0 : strlen(var))
+
 #endif /* HELPER_MACROS */
 
