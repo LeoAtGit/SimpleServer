@@ -52,7 +52,7 @@ int main (int argc, char *argv[])
 	
 	test(listen(sfd, 1)); /* 1 is the backlog */ //FIXME ???
 
-	for(i = 0; i<9; i++) {
+	for(i = 0; i<1; i++) {
 		request_string = malloc(REQUEST_SIZE);
 		test_mem(request_string);
 		memset(request_string, '\0', REQUEST_SIZE);
@@ -90,7 +90,7 @@ int main (int argc, char *argv[])
 			make_response(response, request, cfd);
 		}
 
-		debug_s("Request_uri", request->request_uri);
+		//debug_s("Request_uri", request->request_uri);
 
 		close(cfd);
 		free(response->message_body);
@@ -131,7 +131,7 @@ int init_supported_versions_array()
 	test_mem(supported_versions_array);
 
 	supported_versions_array[0] = "HTTP/1.1";
-	supported_versions_array[SUPPORTED_VERSIONS] = "HTTP/1.1";
+	supported_versions_array[SUPPORTED_VERSIONS] = NULL;
 
 	return 0;
 

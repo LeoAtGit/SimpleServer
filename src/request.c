@@ -36,7 +36,7 @@ int process_request(char *request_string, struct request_struct *request)
 
 	code = OK;
 
-	elements = split_words(request_string);
+	elements = convert_to_request_struct(request_string);
 	if (elements == NULL) {
 		code = NOT_IMPLEMENTED;
 		goto error;
@@ -89,99 +89,86 @@ free_all:
 	free(elements[1]);
 	free(elements[2]);
 	free(elements[3]);
+	request->method = NULL;
+	request->request_uri = NULL;
+	request->http_version = NULL;
+	request->request_header = NULL;
 	goto error;
 }
 
-/*
- * split_words - splits the first line of words of a @text in a array of single
- * words and returns this array. The last element is NULL.
- *
- * Returns array of strings on success, NULL on failure
- *
- * Mallocs and Frees (only on failure): tmp
- *                                      result
- * Mallocs: tmp => element of result
- *          result => is returned
- */
-char **split_words(char *text)
+char **convert_to_request_struct(char *text)
 {
-	int i, beginning, wordlen, num_of_words;
+	int i, tmp_int;
 	char *tmp;
 	char **result;
 
-	num_of_words = 0;
-
-	for (i = 0; text[i] != '\0'; i++) {
-		if (text[i] == ' ') 
-			continue;
-		else
-			break;
+	if (!(text[0] >= 'A' && text[0] <= 'Z')) {
+		return NULL;
 	}
 
-	/* No useful data in the text */
-	if (text[i] == '\0')
-		return NULL;
-
-	result = malloc(sizeof(char *));
+	result = calloc(5, sizeof(char *));
 	test_mem(result);
 
-	/* Now we know the current text[i] is something we can work with */
-	while (text[i] != '\0' && text[i] != '\r' && text[i] != '\n') {
-		beginning = i;
+	for (i = 0; text[i] >= 'A' && text[i] <= 'Z'; i++) {}
 
-		/* skip over the word */
-		for (; text[i] != '\0' && text[i] != ' ' && text[i] != '\r' && text[i] != '\n'; i++) {}
-		wordlen = i - beginning;
-	
-		tmp = malloc(sizeof(char) * (wordlen + 1));
-		test_mem(tmp);
-		memset(tmp, '\0', sizeof(char) * (wordlen + 1));
+	/* Method */
+	tmp = malloc(sizeof(char) * (i + 1));
+	test_mem(tmp);
+	memset(tmp, '\0', sizeof(char) * (i + 1));
+	strncpy(tmp, text, i);
+	result[0] = tmp;
 
-		if (strncpy(tmp, text + beginning, wordlen) == NULL)
-			goto error;
-
-		result[num_of_words] = tmp;
-		num_of_words++;
-
-		/* skip the space */
-		for (; text[i] == ' '; i++) {}
-
-		/* 1 is the memory of the first one */
-		result = realloc(result, sizeof(char *) * (1 + num_of_words)); 
-		test_mem(result);
+	/* Request-Uri */
+	if (text[i] != ' ') {
+		goto free;
 	}
+	for (; text[i] == ' '; i++) {}
+	tmp_int = i;
+	for (; text[i] > ' ' && text[i] <= '~'; i++) {}
+	tmp = malloc(sizeof(char) * ((i - tmp_int) + 1));
+	test_mem(tmp);
+	memset(tmp, '\0', sizeof(char) * ((i - tmp_int) + 1));
+	strncpy(tmp, text + tmp_int, i - tmp_int);
+	result[1] = tmp;
 
-	/* Add the Request Header to result */
-	if (text[i] != '\0') {
-		if (text != NULL) {
-			wordlen = strlen(text) - i;
-		} else {
-			goto error;
-		}
-		tmp = malloc(sizeof(char) * (wordlen + 1));
-		test_mem(tmp);
-		memset(tmp, '\0', sizeof(char) * (wordlen + 1));
-
-		if (strncpy(tmp, text + i, wordlen) == NULL)
-			goto error;
-
-		result[num_of_words] = tmp;
-		num_of_words++;
-
-		result = realloc(result, sizeof(char *) * (1 + num_of_words));
-		test_mem(result);
+	/* HTTP Version */
+	if (text[i] != ' ') {
+		goto free;
 	}
+	for (; text[i] == ' '; i++) {}
+	tmp_int = i;
+	for (; text[i] >= '.' && text[i] < 'Z'; i++) {}
+	tmp = malloc(sizeof(char) * ((i - tmp_int) + 1));
+	test_mem(tmp);
+	memset(tmp, '\0', sizeof(char) * ((i - tmp_int) + 1));
+	strncpy(tmp, text + tmp_int, i - tmp_int);
+	result[2] = tmp;
 
-	result[num_of_words] = NULL;
+	/* Request Header */
+	if (text[i] == '\0') {
+		goto skip;
+	}
+	for (; text[i] == '\n' || text[i] == '\r'; i++) {}
+	tmp_int = i;
+	for (; text[i] != '\0'; i++) {}
+	tmp = malloc(sizeof(char) * ((i - tmp_int) + 1));
+	test_mem(tmp);
+	memset(tmp, '\0', sizeof(char) * ((i - tmp_int) + 1));
+	strncpy(tmp, text + tmp_int, i - tmp_int);
+	result[3] = tmp;
+
+skip:
+	result[4] = NULL;
 	return result;
 
 error:
-	free(tmp);
-	for (i = 0; i <= num_of_words; i++) {
-		free(result[i]);
-	}
+free:
+	free(result[0]);
+	free(result[1]);
+	free(result[2]);
+	free(result[3]);
 	free(result);
-
 	return NULL;
+
 }
 

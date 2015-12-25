@@ -15,7 +15,7 @@ struct request_struct {
 };
 
 int process_request(char *request_string, struct request_struct *request);
-char **split_words(char *text);
+char **convert_to_request_struct(char *text);
 int in_array(const char *element, char **array);
 
 #endif /* REQUEST_H */
