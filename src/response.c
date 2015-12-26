@@ -14,6 +14,7 @@ int make_response(struct response_struct *response, struct request_struct *reque
 	response->http_version = "HTTP/1.1"; //TODO find a better way to do this
 
 	if (response->status_code == OK) {
+		choose_reason_phrase(response);
 		if (generate_message_body(response, request->request_uri) == -1) {
 			goto error_template;
 		}
@@ -102,7 +103,11 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 	strncpy(filepath + docroot_strlen, request_uri, request_strlen);
 	filepath[docroot_strlen + request_strlen] = '\0';
 
-	//TODO check privileges
+	filepath = clean_filepath(filepath);
+	if (filepath == NULL) {
+		response->status_code = INTERNAL_SERVER_ERROR;
+		goto error;
+	}
 	
 	stat(filepath, &stat_buf);
 	if (S_ISDIR(stat_buf.st_mode)) {
@@ -167,8 +172,7 @@ int write_response(int fd, struct response_struct *response)
 
 	total_strlen = strlens(response->http_version) + strlens(response_status_code) + strlens(response->reason_phrase) + total_bytes_read + 5; /* 5 = " " and " " and "\n\n" and "\0" */
 
-	if (total_strlen)
-		response_str = malloc(sizeof(char) * total_strlen);
+	response_str = malloc(sizeof(char) * total_strlen);
 	test_mem(response_str);
 	memset(response_str, '\0', sizeof(char) * total_strlen);
 
@@ -208,6 +212,38 @@ error:
 	return -1;
 }
 
+char *clean_filepath (char *filepath)
+{
+	char *tmp;
+	int total_len, tmp_len, len1, len2;
+
+	for (;;) {
+		total_len = strlen(filepath);
+		if (total_len < 3)
+			break;
+		tmp = strstr(filepath, "../");
+		if (tmp == NULL) /* No more occurence of "../" */
+			break;
+		tmp_len = strlen(tmp);
+		len1 = total_len - tmp_len;
+		len2 = len1 + 3;
+
+		tmp = malloc(sizeof(char) * (total_len - 2));
+		test_mem(tmp);
+		memset(tmp, '\0', sizeof(char) * (total_len - 2));
+
+		snprintf(tmp, total_len - 2, "%.*s%s", len1, filepath, filepath + len2);
+
+		free(filepath);
+		filepath = tmp;
+	}
+
+	return filepath;
+error:
+	free(filepath);
+	return NULL;
+}
+
 /*
  * choose_reason_phrase - Checks the status code from @response->status_code and
  * sets the reason phrase for the response accordingly
@@ -225,6 +261,9 @@ int choose_reason_phrase(struct response_struct *response)
 			break;
 		case BAD_REQUEST:
 			response->reason_phrase = "Bad Request";
+			break;
+		case FORBIDDEN:
+			response->reason_phrase = "Forbidden";
 			break;
 		case NOT_FOUND:
 			response->reason_phrase = "Not Found";

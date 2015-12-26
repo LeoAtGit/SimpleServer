@@ -52,7 +52,7 @@ int main (int argc, char *argv[])
 	
 	test(listen(sfd, 1)); /* 1 is the backlog */ //FIXME ???
 
-	for(i = 0; i<1; i++) {
+	for(i = 0; i<9; i++) {
 		request_string = malloc(REQUEST_SIZE);
 		test_mem(request_string);
 		memset(request_string, '\0', REQUEST_SIZE);
@@ -79,7 +79,7 @@ int main (int argc, char *argv[])
 		}
 
 		if (request_string != NULL) {
-			response->status_code = process_request(request_string, request); //TODO test this
+			response->status_code = process_request(request_string, request);
 		} else {
 			response->status_code = 500;
 		}

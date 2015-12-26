@@ -169,6 +169,5 @@ free:
 	free(result[3]);
 	free(result);
 	return NULL;
-
 }
 

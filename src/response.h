@@ -23,6 +23,7 @@ int total_bytes_read;
 #define CONTINUE 100
 #define OK  200
 #define BAD_REQUEST  400
+#define FORBIDDEN 403
 #define NOT_FOUND 404
 #define INTERNAL_SERVER_ERROR 500
 #define NOT_IMPLEMENTED 501
@@ -86,6 +87,7 @@ int choose_reason_phrase(struct response_struct *response);
 int generate_message_body(struct response_struct *response, char *request_uri);
 int generate_error_template(struct response_struct *response);
 int write_response(int fd, struct response_struct *response);
+char *clean_filepath(char *filepath);
 
 #endif /* RESPONSE_H */
 

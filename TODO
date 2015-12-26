@@ -6,4 +6,5 @@
 - catch SIGINT
 - make some functions return void
 - config reader
+- catch too big requests
 
