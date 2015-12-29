@@ -16,15 +16,14 @@
 #include <errno.h>  /* errno() */
 #include <fcntl.h>  /* open() */
 
+#include "globals.h"
 #include "request.h"
 #include "helper_macros.h"
 #include "response.h"
 
-#define REQUEST_SIZE sizeof(char) * 25
-
-#define SUPPORTED_VERSIONS 1
 char **supported_versions_array;
 
+int load_config();
 int init_request_method_array();
 int init_supported_versions_array();
 

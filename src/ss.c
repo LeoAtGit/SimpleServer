@@ -4,6 +4,7 @@ int main (int argc, char *argv[])
 {
 	int sfd;
 	int cfd;
+	int lfd;
 
 	char *request_string;
 	int request_size;
@@ -14,7 +15,6 @@ int main (int argc, char *argv[])
 	struct sockaddr_in sock_addr;
 
 	uint32_t ip_addr_local;
-	uint16_t port_local;
 
 	int i;
 
@@ -24,8 +24,11 @@ int main (int argc, char *argv[])
 	request_method_array = NULL;
 	supported_versions_array = NULL;
 
-	ip_addr_local = 3232236134; /* 192.168.2.102 */
-	port_local = 12345;
+	ip_addr_local = 3232236134; /* 192.168.2.102 */ //TODO
+
+	lfd = load_config();
+	if (lfd == -1)
+		return -1;
 
 	request = malloc(sizeof(struct request_struct));
 	test_mem(request);
@@ -40,17 +43,17 @@ int main (int argc, char *argv[])
 
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sfd == -1)
-		return -1;
+		goto error;
 
 	inet_addr.s_addr = htonl(ip_addr_local);
 
 	sock_addr.sin_family = AF_INET;
-	sock_addr.sin_port = htons(port_local);
+	sock_addr.sin_port = htons(PORT);
 	sock_addr.sin_addr = inet_addr;
 
 	test(bind(sfd, (struct sockaddr *) &sock_addr, sizeof(struct sockaddr_in)));
 	
-	test(listen(sfd, 1)); /* 1 is the backlog */ //FIXME ???
+	test(listen(sfd, SOMAXCONN));
 
 	for(i = 0; i<9; i++) {
 		request_string = malloc(REQUEST_SIZE);
@@ -90,7 +93,9 @@ int main (int argc, char *argv[])
 			make_response(response, request, cfd);
 		}
 
-		//debug_s("Request_uri", request->request_uri);
+		if (LOG) {
+			//TODO Log stats about the request
+		}
 
 		close(cfd);
 		free(response->message_body);
@@ -111,7 +116,9 @@ int main (int argc, char *argv[])
 	return 0;
 
 error:
-	//TODO Log what happened
+	if (LOG) {
+		//TODO Log what happened
+	}
 	close(sfd);
 	free(request->method);
 	free(request->request_uri);
@@ -125,7 +132,13 @@ error:
 	return -1;
 }
 
-int init_supported_versions_array()
+int load_config ()
+{
+	//TODO
+	return 1;
+}
+
+int init_supported_versions_array ()
 {
 	supported_versions_array = malloc(sizeof(char *) * (SUPPORTED_VERSIONS + 1));
 	test_mem(supported_versions_array);
@@ -139,19 +152,19 @@ error:
 	return 1;
 }
 
-int init_request_method_array()
+int init_request_method_array ()
 {
 	request_method_array = malloc(sizeof(char *) * (REQUEST_METHODS + 1));
 	test_mem(request_method_array);
 
 	request_method_array[0] = "GET";
-	request_method_array[1] = "POST";
+	/*request_method_array[1] = "POST";
 	request_method_array[2] = "OPTIONS";
 	request_method_array[3] = "HEAD";
 	request_method_array[4] = "PUT";
 	request_method_array[5] = "DELETE";
 	request_method_array[6] = "TRACE";
-	request_method_array[7] = "CONNECT";
+	request_method_array[7] = "CONNECT";*/
 	request_method_array[REQUEST_METHODS] = NULL;
 
 	return 0;

@@ -1,22 +1,11 @@
 #ifndef RESPONSE_H
 #define RESPONSE_H
 
-#include "request.h"
-/*#include "sys/types.h"
-#include "sys/stat.h"
-#include "fcntl.h"
-#include "unistd.h"
-*/
 #include <strings.h>
 
+#include "globals.h"
 #include "helper_macros.h"
-
-#ifndef DOC_ROOT
-	#define DOC_ROOT "html"
-#endif /* DOC_ROOT */
-
-/* global for getting the size of the data of message_body */
-int total_bytes_read;
+#include "request.h"
 
 #define READ_SIZE sizeof(char) * 100
 

@@ -11,7 +11,7 @@
 int make_response(struct response_struct *response, struct request_struct *request, int fd)
 {
 	response->message_body = "";
-	response->http_version = "HTTP/1.1"; //TODO find a better way to do this
+	response->http_version = "HTTP/1.1";
 
 	if (response->status_code == OK) {
 		choose_reason_phrase(response);
@@ -94,6 +94,10 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 	response_body = NULL;
 	memset(&stat_buf, '\0', sizeof(struct stat));
 
+	if (strcmp(request_uri, "/") == 0) {
+		request_uri = "/index.html";
+	}
+
 	docroot_strlen = strlens(DOC_ROOT);
 	request_strlen = strlens(request_uri);
 
@@ -108,7 +112,7 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 		response->status_code = INTERNAL_SERVER_ERROR;
 		goto error;
 	}
-	
+
 	stat(filepath, &stat_buf);
 	if (S_ISDIR(stat_buf.st_mode)) {
 		response->status_code = NOT_FOUND;
