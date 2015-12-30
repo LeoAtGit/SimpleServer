@@ -4,7 +4,7 @@ int main (int argc, char *argv[])
 {
 	int sfd;
 	int cfd;
-	int lfd;
+	FILE *lfd;
 
 	char *request_string;
 	int request_size;
@@ -23,12 +23,23 @@ int main (int argc, char *argv[])
 	response = NULL;
 	request_method_array = NULL;
 	supported_versions_array = NULL;
+	lfd = NULL;
+	sfd = -1;
 
-	ip_addr_local = 3232236134; /* 192.168.2.102 */ //TODO
+	ip_addr_local = 2130706433; /* 127.0.0.1 => bind to localhost */
 
-	lfd = load_config();
-	if (lfd == -1)
-		return -1;
+	test(load_config());
+	test(init_request_method_array());
+	test(init_supported_versions_array());
+
+	if (LOG) {
+		lfd = fopen(LOGFILE, "a");
+		test_mem(lfd);
+	}
+	
+	sfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sfd == -1)
+		goto error;
 
 	request = malloc(sizeof(struct request_struct));
 	test_mem(request);
@@ -37,13 +48,6 @@ int main (int argc, char *argv[])
 	response = malloc(sizeof(struct response_struct));
 	test_mem(response);
 	memset(response, '\0', sizeof(struct response_struct));
-
-	test(init_request_method_array());
-	test(init_supported_versions_array());
-
-	sfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sfd == -1)
-		goto error;
 
 	inet_addr.s_addr = htonl(ip_addr_local);
 
@@ -94,7 +98,7 @@ int main (int argc, char *argv[])
 		}
 
 		if (LOG) {
-			//TODO Log stats about the request
+			fwrite(request_string, request_size + REQUEST_SIZE, 1, lfd);
 		}
 
 		close(cfd);
@@ -112,12 +116,13 @@ int main (int argc, char *argv[])
 	free(request);
 	free(request_method_array);
 	free(supported_versions_array);
-
+	free(cfg.logfile);
+	free(cfg.docroot);
 	return 0;
 
 error:
 	if (LOG) {
-		//TODO Log what happened
+		fwrite("Error Exit!", strlen("Error Exit!"), 1, lfd);
 	}
 	close(sfd);
 	free(request->method);
@@ -129,16 +134,131 @@ error:
 	free(request_method_array);
 	free(supported_versions_array);
 	free(request_string);
+	free(cfg.logfile);
+	free(cfg.docroot);
 	return -1;
 }
 
-int load_config ()
+int load_config (void)
 {
-	//TODO
-	return 1;
+	FILE *cfd;
+	char *lineptr;
+	size_t n;
+	int count;
+	int i;
+	int strlentmp;
+	char *tmp;
+
+	lineptr = NULL;
+	tmp = NULL;
+
+	cfd = fopen("config.ini", "r");
+	test_mem(cfd);
+
+	count = CONFIG_OPTIONS;
+	lineptr = malloc(sizeof(char *));
+	test_mem(lineptr);
+	n = 0;
+
+	cfg.port = 8080;
+	cfg.request_size = 25;
+	cfg.log = 1;
+	cfg.logfile = "ss.log";
+	cfg.docroot = "html";
+
+	while (getline(&lineptr, &n, cfd) != -1) {
+		if (lineptr[0] == '#') /* Ignore the rest of the line, because it's a comment */
+			continue;
+
+		strlentmp = 0;
+		/* has to be at the beginning of the line */
+		if (strstr(lineptr, "port=") == lineptr) {
+			for (i = strlen("port="); lineptr[i] != '\0'; i++) {
+				strlentmp++;
+			}
+			if (strlentmp != 0) {
+				tmp = malloc(sizeof(char) * strlentmp);
+				test_mem(tmp);
+				memset(tmp, '\0', sizeof(char) * strlentmp);
+				strncpy(tmp, lineptr + strlen("port="), sizeof(char) * strlentmp);
+				cfg.port = (uint16_t) atoi(tmp);
+				free(tmp);
+				tmp = NULL;
+			}
+			strlentmp = 0;
+		} else if (strstr(lineptr, "request_size=") == lineptr) {
+			for (i = strlen("request_size="); lineptr[i] != '\0'; i++) {
+				strlentmp++;
+			}
+			if (strlentmp != 0) {
+				tmp = malloc(sizeof(char) * strlentmp);
+				test_mem(tmp);
+				memset(tmp, '\0', sizeof(char) * strlentmp);
+				strncpy(tmp, lineptr + strlen("request_size="), sizeof(char) * strlentmp);
+				cfg.request_size = (size_t) atol(tmp);
+				free(tmp);
+				tmp = NULL;
+			}
+			strlentmp = 0;
+		} else if (strstr(lineptr, "log=") == lineptr) {
+			for (i = strlen("log="); lineptr[i] != '\0'; i++) {
+				strlentmp++;
+			}
+			if (strlentmp != 0) {
+				tmp = malloc(sizeof(char) * strlentmp);
+				test_mem(tmp);
+				memset(tmp, '\0', sizeof(char) * strlentmp);
+				strncpy(tmp, lineptr + strlen("log="), sizeof(char) * strlentmp);
+				cfg.log = atoi(tmp);
+				free(tmp);
+				tmp = NULL;
+			}
+			strlentmp = 0;
+		} else if (strstr(lineptr, "logfile=") == lineptr) {
+			for (i = strlen("logfile="); lineptr[i] != '\0'; i++) {
+				strlentmp++;
+			}
+			if (strlentmp != 0) {
+				tmp = malloc(sizeof(char) * strlentmp);
+				test_mem(tmp);
+				memset(tmp, '\0', sizeof(char) * strlentmp);
+				strncpy(tmp, lineptr + strlen("logfile="), sizeof(char) * (strlentmp - 1));
+				cfg.logfile = tmp;
+			}
+			strlentmp = 0;
+		} else if (strstr(lineptr, "docroot=") == lineptr) {
+			for (i = strlen("docroot="); lineptr[i] != '\0'; i++) {
+				strlentmp++;
+			}
+			if (strlentmp != 0) {
+				tmp = malloc(sizeof(char) * strlentmp);
+				test_mem(tmp);
+				memset(tmp, '\0', sizeof(char) * strlentmp);
+				strncpy(tmp, lineptr + strlen("docroot="), sizeof(char) * (strlentmp - 1));
+				cfg.docroot = tmp;
+			}
+			strlentmp = 0;
+		}
+		count--;
+	}
+
+	fclose(cfd);
+	free(lineptr);
+
+	PORT = cfg.port;
+	REQUEST_SIZE = cfg.request_size;
+	LOG = cfg.log;
+	LOGFILE = cfg.logfile;
+	DOC_ROOT = cfg.docroot;
+
+	return 0;
+error:
+	fclose(cfd);
+	free(lineptr);
+	return -1;
 }
 
-int init_supported_versions_array ()
+int init_supported_versions_array (void)
 {
 	supported_versions_array = malloc(sizeof(char *) * (SUPPORTED_VERSIONS + 1));
 	test_mem(supported_versions_array);
@@ -152,19 +272,12 @@ error:
 	return 1;
 }
 
-int init_request_method_array ()
+int init_request_method_array (void)
 {
 	request_method_array = malloc(sizeof(char *) * (REQUEST_METHODS + 1));
 	test_mem(request_method_array);
 
 	request_method_array[0] = "GET";
-	/*request_method_array[1] = "POST";
-	request_method_array[2] = "OPTIONS";
-	request_method_array[3] = "HEAD";
-	request_method_array[4] = "PUT";
-	request_method_array[5] = "DELETE";
-	request_method_array[6] = "TRACE";
-	request_method_array[7] = "CONNECT";*/
 	request_method_array[REQUEST_METHODS] = NULL;
 
 	return 0;

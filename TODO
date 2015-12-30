@@ -1,10 +1,5 @@
 - check for memory leaks when error handling
 - test every branch when there is a error
-- change the way you do includes
 - add multithreading
 - make it a daemon
-- catch SIGINT
-- make some functions return void
-- config reader
-- catch too big requests
 

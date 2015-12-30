@@ -5,8 +5,8 @@
 uint16_t PORT = 8080;
 size_t REQUEST_SIZE = sizeof(char) * 25;
 int LOG = 1;
-char LOGFILE[] = "ss.log";
-char DOC_ROOT[] = "html";
+char *LOGFILE = "ss.log";
+char *DOC_ROOT = "html";
 
 #define SUPPORTED_VERSIONS 1
 #define REQUEST_METHODS 1
