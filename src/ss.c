@@ -98,7 +98,7 @@ int main (int argc, char *argv[])
 		}
 
 		if (LOG) {
-			fwrite(request_string, request_size + REQUEST_SIZE, 1, lfd);
+			fwrite(request_string, strlen(request_string), 1, lfd);
 		}
 
 		close(cfd);
