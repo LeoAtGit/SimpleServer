@@ -1,10 +1,10 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
-#include "globals.h"
 #include "ss.h"
 #include "helper_macros.h"
 
+#define REQUEST_METHODS 1
 char **request_method_array;
 
 struct request_struct {

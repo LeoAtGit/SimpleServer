@@ -32,8 +32,8 @@ int main (int argc, char *argv[])
 	test(init_request_method_array());
 	test(init_supported_versions_array());
 
-	if (LOG) {
-		lfd = fopen(LOGFILE, "a");
+	if (cfg.log) {
+		lfd = fopen(cfg.logfile, "a");
 		test_mem(lfd);
 	}
 	
@@ -52,17 +52,17 @@ int main (int argc, char *argv[])
 	inet_addr.s_addr = htonl(ip_addr_local);
 
 	sock_addr.sin_family = AF_INET;
-	sock_addr.sin_port = htons(PORT);
+	sock_addr.sin_port = htons(cfg.port);
 	sock_addr.sin_addr = inet_addr;
 
 	test(bind(sfd, (struct sockaddr *) &sock_addr, sizeof(struct sockaddr_in)));
 	
 	test(listen(sfd, SOMAXCONN));
 
-	for(i = 0; i<9; i++) {
-		request_string = malloc(REQUEST_SIZE);
+	for(i = 0; i<1; i++) {
+		request_string = malloc(cfg.request_size);
 		test_mem(request_string);
-		memset(request_string, '\0', REQUEST_SIZE);
+		memset(request_string, '\0', cfg.request_size);
 
 		cfd = accept(sfd, NULL, 0);
 		request_size = 0;
@@ -70,18 +70,18 @@ int main (int argc, char *argv[])
 		/* We first have to do a blocking read call, so that we don't
 		 * just get empty data because recv doesn't wait for the data
 		 * to arrive */
-		if (read(cfd, request_string, REQUEST_SIZE) == REQUEST_SIZE) {
-			request_size += REQUEST_SIZE;
-			request_string = realloc(request_string, REQUEST_SIZE + request_size);
+		if (read(cfd, request_string, cfg.request_size) == cfg.request_size) {
+			request_size += cfg.request_size;
+			request_string = realloc(request_string, cfg.request_size + request_size);
 			test_mem(request_string);
-			memset(request_string + request_size, '\0', REQUEST_SIZE);
+			memset(request_string + request_size, '\0', cfg.request_size);
 			
 			/* Non-blocking recv calls */
-			while (recv(cfd, request_string + request_size, REQUEST_SIZE, MSG_DONTWAIT) == REQUEST_SIZE) {
-				request_size += REQUEST_SIZE;
-				request_string = realloc(request_string, REQUEST_SIZE + request_size);
+			while (recv(cfd, request_string + request_size, cfg.request_size, MSG_DONTWAIT) == cfg.request_size) {
+				request_size += cfg.request_size;
+				request_string = realloc(request_string, cfg.request_size + request_size);
 				test_mem(request_string);
-				memset(request_string + request_size, '\0', REQUEST_SIZE);
+				memset(request_string + request_size, '\0', cfg.request_size);
 			}
 		}
 
@@ -91,13 +91,13 @@ int main (int argc, char *argv[])
 			response->status_code = 500;
 		}
 
-		if (make_response(response, request, cfd)) {
+		if (make_response(response, request, cfd, cfg.doc_root)) {
 			response->status_code = 500;
 			/* Try it one more time with different status code */
-			make_response(response, request, cfd);
+			make_response(response, request, cfd, cfg.doc_root);
 		}
 
-		if (LOG) {
+		if (cfg.log) {
 			fwrite(request_string, strlen(request_string), 1, lfd);
 		}
 
@@ -107,22 +107,25 @@ int main (int argc, char *argv[])
 		free(request->request_uri);
 		free(request->http_version);
 		free(request->request_header);
-		memset(request_string, '\0', REQUEST_SIZE + request_size);
+		memset(request_string, '\0', cfg.request_size + request_size);
 		free(request_string);
 	}
 
+	if (cfg.log)
+		fclose(lfd);
 	close(sfd);
 	free(response);
 	free(request);
 	free(request_method_array);
 	free(supported_versions_array);
 	free(cfg.logfile);
-	free(cfg.docroot);
+	free(cfg.doc_root);
 	return 0;
 
 error:
-	if (LOG) {
+	if (cfg.log) {
 		fwrite("Error Exit!", strlen("Error Exit!"), 1, lfd);
+		fclose(lfd);
 	}
 	close(sfd);
 	free(request->method);
@@ -135,7 +138,7 @@ error:
 	free(supported_versions_array);
 	free(request_string);
 	free(cfg.logfile);
-	free(cfg.docroot);
+	free(cfg.doc_root);
 	return -1;
 }
 
@@ -156,15 +159,16 @@ int load_config (void)
 	test_mem(cfd);
 
 	count = CONFIG_OPTIONS;
-	lineptr = malloc(sizeof(char *));
-	test_mem(lineptr);
+	//lineptr = malloc(sizeof(char *));
+	lineptr = "";
+	//test_mem(lineptr);
 	n = 0;
 
 	cfg.port = 8080;
 	cfg.request_size = 25;
 	cfg.log = 1;
 	cfg.logfile = "ss.log";
-	cfg.docroot = "html";
+	cfg.doc_root = "html";
 
 	while (getline(&lineptr, &n, cfd) != -1) {
 		if (lineptr[0] == '#') /* Ignore the rest of the line, because it's a comment */
@@ -235,7 +239,7 @@ int load_config (void)
 				test_mem(tmp);
 				memset(tmp, '\0', sizeof(char) * strlentmp);
 				strncpy(tmp, lineptr + strlen("docroot="), sizeof(char) * (strlentmp - 1));
-				cfg.docroot = tmp;
+				cfg.doc_root = tmp;
 			}
 			strlentmp = 0;
 		}
@@ -244,12 +248,6 @@ int load_config (void)
 
 	fclose(cfd);
 	free(lineptr);
-
-	PORT = cfg.port;
-	REQUEST_SIZE = cfg.request_size;
-	LOG = cfg.log;
-	LOGFILE = cfg.logfile;
-	DOC_ROOT = cfg.docroot;
 
 	return 0;
 error:

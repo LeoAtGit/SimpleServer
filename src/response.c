@@ -8,14 +8,14 @@
  *
  * Returns 0 on success and -1 on failure
  */
-int make_response(struct response_struct *response, struct request_struct *request, int fd)
+int make_response(struct response_struct *response, struct request_struct *request, int fd, char *doc_root)
 {
 	response->message_body = "";
 	response->http_version = "HTTP/1.1";
 
 	if (response->status_code == OK) {
 		choose_reason_phrase(response);
-		if (generate_message_body(response, request->request_uri) == -1) {
+		if (generate_message_body(response, request->request_uri, doc_root) == -1) {
 			goto error_template;
 		}
 	} else {
@@ -74,7 +74,7 @@ error:
  * Mallocs and Frees: filepath
  * Mallocs: response_body => passed to response->message_body
  */
-int generate_message_body(struct response_struct *response, char *request_uri)
+int generate_message_body(struct response_struct *response, char *request_uri, char *doc_root)
 {
 	char *filepath;
 	int docroot_strlen;
@@ -98,12 +98,12 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 		request_uri = "/index.html";
 	}
 
-	docroot_strlen = strlens(DOC_ROOT);
+	docroot_strlen = strlens(doc_root);
 	request_strlen = strlens(request_uri);
 
 	filepath = malloc(sizeof(char) * (docroot_strlen + request_strlen + 1));
 	test_mem(filepath);
-	strncpy(filepath, DOC_ROOT, docroot_strlen);
+	strncpy(filepath, doc_root, docroot_strlen);
 	strncpy(filepath + docroot_strlen, request_uri, request_strlen);
 	filepath[docroot_strlen + request_strlen] = '\0';
 
@@ -143,8 +143,6 @@ int generate_message_body(struct response_struct *response, char *request_uri)
 
 	total_bytes_read = response_size;
 	response->message_body = response_body;
-
-	//debug_n("total_bytes_read", total_bytes_read);
 
 	close(fd_request);
 	free(filepath);

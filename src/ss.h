@@ -18,7 +18,6 @@
 #include <errno.h>  /* errno() */
 #include <fcntl.h>  /* open() */
 
-#include "globals.h"
 #include "request.h"
 #include "helper_macros.h"
 #include "response.h"
@@ -30,9 +29,10 @@ struct config {
 	size_t request_size;
 	int log;
 	char *logfile;
-	char *docroot;
+	char *doc_root;
 } cfg;
 
+#define SUPPORTED_VERSIONS 1
 char **supported_versions_array;
 
 int load_config(void);

@@ -3,7 +3,6 @@
 
 #include <strings.h>
 
-#include "globals.h"
 #include "helper_macros.h"
 #include "request.h"
 
@@ -61,6 +60,8 @@
 	"505" HTTP Version not supported
 */
 
+size_t total_bytes_read;
+
 /* forward declaration */
 struct request_struct;
 
@@ -71,9 +72,9 @@ struct response_struct {
 	void *message_body;
 };
 
-int make_response(struct response_struct *response, struct request_struct *request, int fd);
+int make_response(struct response_struct *response, struct request_struct *request, int fd, char *doc_root);
 int choose_reason_phrase(struct response_struct *response);
-int generate_message_body(struct response_struct *response, char *request_uri);
+int generate_message_body(struct response_struct *response, char *request_uri, char *doc_root);
 int generate_error_template(struct response_struct *response);
 int write_response(int fd, struct response_struct *response);
 char *clean_filepath(char *filepath);
