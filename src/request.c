@@ -80,7 +80,18 @@ int process_request(char *request_string, struct request_struct *request)
 		request->request_header = elements[3];
 	}
 
+	free(elements);
+	return code;
+
 error:
+	if (elements[0])
+		free(elements[0]);
+	if (elements[1])
+		free(elements[1]);
+	if (elements[2])
+		free(elements[2]);
+	if (elements[3])
+		free(elements[3]);
 	free(elements);
 	return code;
 

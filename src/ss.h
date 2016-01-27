@@ -26,7 +26,8 @@
 
 struct config {
 	uint16_t port;
-	size_t request_size;
+	size_t request_size;  /* For each individual read of input stream */
+	int max_request_size; /* In total */
 	int log;
 	char *logfile;
 	char *doc_root;

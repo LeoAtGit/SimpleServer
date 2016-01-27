@@ -1,6 +1,1 @@
-- check for memory leaks when error handling
-- test every branch when there is a error
-
-- make it a daemon
-- catch SIGTERM
 

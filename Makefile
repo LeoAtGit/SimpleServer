@@ -1,5 +1,5 @@
 # Uncomment the next line if you don't want debug output
-#debug = -DDEBUG -ggdb
+debug = -DDEBUG -ggdb
 
 all: request.o main.o response.o
 	gcc -std=c99 -Wall -pedantic -O3 $(debug) main.o request.o response.o -o simpleserver
